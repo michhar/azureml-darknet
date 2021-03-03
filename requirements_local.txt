@@ -1,0 +1,2 @@
+azureml-sdk==1.23.0
+jupyter==1.0.0
