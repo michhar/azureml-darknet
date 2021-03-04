@@ -11,8 +11,8 @@ import argparse
 # Fill in number of classes
 num_classes = 1
 
-# Create a list with anchor boxes
-anchors = []
+# Fill in with a list of anchor boxes
+anchors = "11, 33,  18, 28,  19, 33,  22, 30,  22, 34,  25, 34"
 
 # Test greeting
 def greeting():
@@ -91,6 +91,9 @@ config_content = config_content.replace("max_batches = 2000200", "max_batches={}
 config_content = config_content.replace("steps=1600000,1800000", 
                                         "steps={},{}".format(int(0.8*args.epochs), 
                                                              int(0.9*args.epochs)))
+# Replace anchors
+config_content = config_content.replace("10,14,  23,27,  37,58,  81,82,  135,169,  344,319",
+                                       anchors)
 
 with open("yolov4-tiny-custom.cfg", "w") as f:
     f.write(config_content)
