@@ -133,5 +133,24 @@ os.system("ls")
 # if os.path.exists("predictions.png"):
 #     shutil.copyfile("predictions.png", "outputs/predictions.png")
 
-# ========================== Convert model to tflite - TBD ==========================
+# ========================== Convert model to tflite - WIP ==========================
 
+# Set up project
+setup_tflite = """
+    git clone https://github.com/hunglc007/tensorflow-yolov4-tflite.git
+"""
+
+os.system(setup_tflite)
+
+with open("tensorflow-yolov4-tflite/core/config.py", "r") as f:
+    config_tflite = f.read()
+config_tflite = config_tflite.replace("coco.names", "obj.names")
+with open("tensorflow-yolov4-tflite/core/config.py", "w") as f:
+    f.write(config_tflite)
+shutil.copy("data/obj.names", "tensorflow-yolov4-tflite/data/classes/obj.names")
+# TODO: replace anchors
+
+# Save as TF
+os.system("cd tensorflow-yolov4-tflite && python save_model.py --weights ../outputs/yolov4-tiny-custom_best.weights --output ../outputs/yolov4-tiny-416-tflite --input_size 416 --model yolov4 --framework tflite --tiny")
+# Convert to TFLite
+os.system("cd tensorflow-yolov4-tflite && python convert_tflite.py --weights ../outputs/yolov4-tiny-416-tflite --output ../outputs/yolov4-tiny-416-fp16.tflite --quantize_mode float16")
