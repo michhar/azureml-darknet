@@ -138,18 +138,25 @@ result = result.split("\n")
 for line in result:
     # This is what darknet outputs at end
     if "mean average precision (mAP@0.50)" in line:
-        mAP = line[-8:].replace(" % ", "%")
+        mAP = float(line[-8:].replace(" % ", ""))
         # Log to Azure ML workspace
         run.log('mAP0.5_all', mAP)
 
         
 # ========================== Register model - TBD ==========================
 
-# Get class names as string
-with open("./data/obj.names", "r") as f:
-    class_names = f.read().replace("\n", "_").replace(" ", "").strip()
+# # Get class names as string
+# with open("./data/obj.names", "r") as f:
+#     class_names = f.read().replace("\n", "_").replace(" ", "").strip()
 
-
+# model = run.register_model(model_name='darknet-yolov4-tiny',
+#                            tags={"mAP0.5_all": mAP,
+#                                  "classes": class_names,
+#                                  "learning_rate": args.lr,
+#                                  "batch_size": args.bs,
+#                                  "format": "darknet"},
+#                            model_path="./outputs/yolov4-tiny-custom_final.weights")
+                           
 # ========================== Evaluate model - TBD ==========================
 
 
@@ -183,12 +190,18 @@ os.system(setup_tflite)
 with open("tensorflow-yolov4-tflite/core/config.py", "r") as f:
     config_tflite = f.read()
 config_tflite = config_tflite.replace("coco.names", "obj.names")
+config_tflite = config_tflite.replace("__C.YOLO.ANCHORS_TINY         = [23,27, 37,58, 81,82, 81,82, 135,169, 344,319]",
+                                      "__C.YOLO.ANCHORS_TINY         = [{}]".format(anchors))
 with open("tensorflow-yolov4-tflite/core/config.py", "w") as f:
     f.write(config_tflite)
 shutil.copy("data/obj.names", "tensorflow-yolov4-tflite/data/classes/obj.names")
-# TODO: replace anchors
 
 # Save as TF
 os.system("cd tensorflow-yolov4-tflite && python save_model.py --weights ../outputs/yolov4-tiny-custom_best.weights --output ../outputs/yolov4-tiny-416-tflite --input_size 416 --model yolov4 --framework tflite --tiny")
 # Convert to TFLite
 os.system("cd tensorflow-yolov4-tflite && python convert_tflite.py --weights ../outputs/yolov4-tiny-416-tflite --output ../outputs/yolov4-tiny-416-fp16.tflite --quantize_mode float16")
+
+# model = run.register_model(model_name='tflite-yolov4-tiny',
+#                            tags={"classes": class_names,
+#                                  "format": "tflite"},
+#                            model_path=os.path.join("./outputs/yolov4-tiny-416-fp16.tflite"))
