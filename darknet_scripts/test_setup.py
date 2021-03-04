@@ -1,17 +1,37 @@
 """
-Azure ML training script for Darknet object detection experiment
+Azure ML test setup script for Darknet object detection experiment
 """
 import os
 import requests
 import subprocess
 import shutil
+import argparse
 
 
-# Test container
+# Test greeting
 def greeting():
     print("Welcome to darknet container!")
-
 greeting()
+
+os.makedirs('./outputs', exist_ok=True)
+
+# Arguments
+parser = argparse.ArgumentParser()
+parser.add_argument('--data-folder', type=str,
+                    dest='data_folder', help='data folder')
+args = parser.parse_args()
+
+# Look at data folder
+print('Data folder is at:', args.data_folder)
+print('List all files: ', os.listdir(args.data_folder))
+
+zipfilename = os.path.join(args.data_folder, "data.zip")
+# Unzip the data.zip to cwd where it will be a folder called "data"
+shutil.unpack_archive(zipfilename, ".")
+fulldatapath = os.path.join(args.data_folder, "data")
+
+print("Contents of data folder: ")
+os.system("ls data")
 
 print("Getting the test image...")
 # Get a test image
