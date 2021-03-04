@@ -7,6 +7,12 @@ import subprocess
 import shutil
 import argparse
 
+from azureml.core.run import Run
+from azureml.core.model import Model
+
+
+# Azure ML run to log metrics etc.
+run = Run.get_context()
 
 # Fill in number of classes
 num_classes = 1
@@ -109,8 +115,40 @@ os.system("ls")
 
 # Predict with darknet
 print("Running darknet training experiment for {} epochs!".format(args.epochs))
-os.system("darknet detector train obj.data yolov4-tiny-custom.cfg yolov4-tiny.conv.29 -map -dont_show -clear")
+# os.system("darknet detector train obj.data yolov4-tiny-custom.cfg yolov4-tiny.conv.29 -map -dont_show -clear")
+
+result = subprocess.run(['darknet', 
+                         'detector',
+                         'train',
+                         'obj.data',
+                         'yolov4-tiny-custom.cfg', 
+                         'yolov4-tiny.conv.29',
+                         '-map',
+                         '-dont_show',
+                         '-clear'], 
+                        stdout=subprocess.PIPE).stdout.decode('utf-8')
+
 os.system("ls")
+
+mAP = ""
+# # Capture mAP of final model (read from log file)
+# with open("./azureml-logs/70_driver_log.txt", "r") as f:
+#     logfile_content = f.readlines()
+result = result.split("\n")
+for line in result:
+    # This is what darknet outputs at end
+    if "mean average precision (mAP@0.50)" in line:
+        mAP = line[-8:].replace(" % ", "%")
+        # Log to Azure ML workspace
+        run.log('mAP0.5_all', mAP)
+
+        
+# ========================== Register model - TBD ==========================
+
+# Get class names as string
+with open("./data/obj.names", "r") as f:
+    class_names = f.read().replace("\n", "_").replace(" ", "").strip()
+
 
 # ========================== Evaluate model - TBD ==========================
 
@@ -118,25 +156,22 @@ os.system("ls")
 
 # ========================== Small test - optional ==========================
 
-# print("Getting the test image...")
-# # Get a test image
-# url = "https://raw.githubusercontent.com/AlexeyAB/darknet/master/data/giraffe.jpg"
-# response = requests.get(url)
-# if response.status_code == 200:
-#     with open("giraffe.jpg", "wb") as f:
-#         f.write(response.content)
+with open("data/valid.txt", "r") as f:
+    validtxt = f.readlines()
+# Pick first image
+testimg = validtxt[0].strip()
 
-# # Predict with darknet
-# print("Running darknet detector test!")
-# os.system("darknet detector test coco.data yolov4.cfg yolov4.weights -thresh 0.25 giraffe.jpg -ext_output")
-# os.system("ls")
+# Predict with darknet
+print("Running darknet detector test!")
+os.system("darknet detector test obj.data yolov4-tiny-custom.cfg ./outputs/yolov4-tiny-custom_final.weights -thresh 0.25 {} -ext_output".format(testimg))
+os.system("ls")
 
-# if os.path.exists("predictions.jpg"):
-#     shutil.copyfile("predictions.jpg", "outputs/predictions.jpg")
-# if os.path.exists("predictions.png"):
-#     shutil.copyfile("predictions.png", "outputs/predictions.png")
+if os.path.exists("predictions.jpg"):
+    shutil.copyfile("predictions.jpg", "./outputs/predictions.jpg")
+if os.path.exists("predictions.png"):
+    shutil.copyfile("predictions.png", "./outputs/predictions.png")
 
-# ========================== Convert model to tflite - WIP ==========================
+# ========================== Convert model to tflite ==========================
 
 # Set up project
 setup_tflite = """
