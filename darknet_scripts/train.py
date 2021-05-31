@@ -15,10 +15,10 @@ from azureml.core.model import Model
 run = Run.get_context()
 
 # Fill in number of classes
-num_classes = 1
+num_classes = 3
 
 # Fill in with a list of anchor boxes
-anchors = "11, 33,  18, 28,  19, 33,  22, 30,  22, 34,  25, 34"
+anchors = "42,98, 53,120, 58,137, 76,181, 109,162, 131,261"
 
 # Test greeting
 def greeting():
@@ -45,25 +45,9 @@ args = parser.parse_args()
 print('Data folder is at:', args.data_folder)
 print('List all files: ', os.listdir(args.data_folder))
 
-zipfilename = os.path.join(args.data_folder, "data.zip")
-# Unzip the data.zip to cwd where it will be a folder called "data"
-shutil.unpack_archive(zipfilename, ".")
-fulldatapath = os.path.join(args.data_folder, "data")
+fulldatapath = args.data_folder
 
 # ========================== Create or download necessary files ==========================
-
-# Make obj.data file (if we put model in "outputs" it will show in the Portal)
-obj_data = """
-classes= {}
-train  = data/train.txt
-valid  = data/valid.txt
-names = data/obj.names
-backup = outputs/
-""".format(num_classes)
-
-print("Making obj.data...") # see top of notebook
-with open("obj.data", "w") as f:
-    f.write(obj_data)
     
 # Get the pre-trained weights file
 print("Getting the pre-trained weights file, yolov4-tiny.conv.29...")
@@ -103,8 +87,8 @@ config_content = config_content.replace("10,14,  23,27,  37,58,  81,82,  135,169
 
 with open("yolov4-tiny-custom.cfg", "w") as f:
     f.write(config_content)
-# What does the config file look like now?
-os.system("cat yolov4-tiny-custom.cfg")
+if os.path.exists("yolov4-tiny-custom.cfg"):
+    shutil.copyfile("yolov4-tiny-custom.cfg", "./outputs/yolov4-tiny-custom.cfg")
 
 # What is our current working directory?
 print("Current working directory: {}".format(os.getcwd()))
@@ -115,12 +99,11 @@ os.system("ls")
 
 # Predict with darknet
 print("Running darknet training experiment for {} epochs!".format(args.epochs))
-# os.system("darknet detector train obj.data yolov4-tiny-custom.cfg yolov4-tiny.conv.29 -map -dont_show -clear")
 
 result = subprocess.run(['darknet', 
                          'detector',
                          'train',
-                         'obj.data',
+                         'data/obj.data',
                          'yolov4-tiny-custom.cfg', 
                          'yolov4-tiny.conv.29',
                          '-map',
@@ -131,9 +114,7 @@ result = subprocess.run(['darknet',
 os.system("ls")
 
 mAP = ""
-# # Capture mAP of final model (read from log file)
-# with open("./azureml-logs/70_driver_log.txt", "r") as f:
-#     logfile_content = f.readlines()
+# Capture mAP of final model (read from log file)
 result = result.split("\n")
 for line in result:
     # This is what darknet outputs at end
@@ -156,9 +137,6 @@ for line in result:
 #                                  "batch_size": args.bs,
 #                                  "format": "darknet"},
 #                            model_path="./outputs/yolov4-tiny-custom_final.weights")
-                           
-# ========================== Evaluate model - TBD ==========================
-
 
 
 # ========================== Small test - optional ==========================
@@ -170,38 +148,11 @@ testimg = validtxt[0].strip()
 
 # Predict with darknet
 print("Running darknet detector test!")
-os.system("darknet detector test obj.data yolov4-tiny-custom.cfg ./outputs/yolov4-tiny-custom_final.weights -thresh 0.25 {} -ext_output".format(testimg))
+os.system("darknet detector test data/obj.data yolov4-tiny-custom.cfg ./outputs/yolov4-tiny-custom_final.weights -thresh 0.25 {} -ext_output".format(testimg))
 os.system("ls")
 
 if os.path.exists("predictions.jpg"):
     shutil.copyfile("predictions.jpg", "./outputs/predictions.jpg")
-if os.path.exists("predictions.png"):
-    shutil.copyfile("predictions.png", "./outputs/predictions.png")
 
-# ========================== Convert model to tflite ==========================
+# ========================== Convert model to onnx - TBD ==========================
 
-# Set up project
-setup_tflite = """
-    git clone https://github.com/hunglc007/tensorflow-yolov4-tflite.git
-"""
-
-os.system(setup_tflite)
-
-with open("tensorflow-yolov4-tflite/core/config.py", "r") as f:
-    config_tflite = f.read()
-config_tflite = config_tflite.replace("coco.names", "obj.names")
-config_tflite = config_tflite.replace("__C.YOLO.ANCHORS_TINY         = [23,27, 37,58, 81,82, 81,82, 135,169, 344,319]",
-                                      "__C.YOLO.ANCHORS_TINY         = [{}]".format(anchors))
-with open("tensorflow-yolov4-tflite/core/config.py", "w") as f:
-    f.write(config_tflite)
-shutil.copy("data/obj.names", "tensorflow-yolov4-tflite/data/classes/obj.names")
-
-# Save as TF
-os.system("cd tensorflow-yolov4-tflite && python save_model.py --weights ../outputs/yolov4-tiny-custom_best.weights --output ../outputs/yolov4-tiny-416-tflite --input_size 416 --model yolov4 --framework tflite --tiny")
-# Convert to TFLite
-os.system("cd tensorflow-yolov4-tflite && python convert_tflite.py --weights ../outputs/yolov4-tiny-416-tflite --output ../outputs/yolov4-tiny-416-fp16.tflite --quantize_mode float16")
-
-# model = run.register_model(model_name='tflite-yolov4-tiny',
-#                            tags={"classes": class_names,
-#                                  "format": "tflite"},
-#                            model_path=os.path.join("./outputs/yolov4-tiny-416-fp16.tflite"))

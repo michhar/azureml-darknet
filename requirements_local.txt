@@ -1,2 +1,4 @@
-azureml-sdk==1.23.0
+azureml-core==1.29.0
 jupyter==1.0.0
+onnx==1.9.0
+onnxruntime==1.7.0

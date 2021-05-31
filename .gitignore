@@ -1,6 +1,12 @@
+# User added
 .azureml
-data/
+data*/
+images/
 *.zip
+*.json
+anchors.txt
+results/
+demo_*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

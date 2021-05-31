@@ -25,9 +25,6 @@ args = parser.parse_args()
 print('Data folder is at:', args.data_folder)
 print('List all files: ', os.listdir(args.data_folder))
 
-zipfilename = os.path.join(args.data_folder, "data.zip")
-# Unzip the data.zip to cwd where it will be a folder called "data"
-shutil.unpack_archive(zipfilename, ".")
 fulldatapath = os.path.join(args.data_folder, "data")
 
 print("Contents of data folder: ")

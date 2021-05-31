@@ -15,8 +15,13 @@ FROM $BASE_IMAGE AS builder
 ENV DEBIAN_FRONTEND noninteractive
 
 RUN apt-get update \
-      && apt-get install --no-install-recommends --no-install-suggests -y gnupg2 ca-certificates \
-            git build-essential libopencv-dev python3-opencv \
+      && apt-get install --no-install-recommends --no-install-suggests -y gnupg2 \
+      ca-certificates \
+      git \
+      build-essential \
+      libopencv-dev \
+      python3-opencv \
+      gcc \
       && rm -rf /var/lib/apt/lists/*
 
 ARG SOURCE_BRANCH=master
@@ -60,11 +65,9 @@ RUN wget --quiet https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86
 ENV PATH /opt/conda/bin:$PATH
 
 # Update package installers
-RUN conda update conda -y
-RUN pip install --upgrade pip
-RUN pip install --upgrade setuptools
+RUN conda install python=3.8 && conda update conda -y
 
 # Install Python packages
-RUN pip install azureml-sdk==1.23.0
-# RUN wget https://gist.githubusercontent.com/michhar/5eea9a65790debc9e53239b743ce167f/raw/ce7e0a2047213354d7a67af816e7dd0b1e60db7b/requirements-gpu-tflite.txt \
-#     && pip install -r requirements-gpu-tflite.txt
+RUN python -m pip install --upgrade pip==19.0 setuptools
+RUN python -m pip install azureml-core==1.29.0 azureml-dataset-runtime==1.29.0
+
