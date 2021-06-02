@@ -14,10 +14,7 @@ matplotlib.use('TkAgg')
 
 # User defined constants - todo: make into args
 # define the anchors (here is tiny yolov4 anchors)
-# anchors are grouped by threes
-# each grouping (sub-group) increases in size
-# the outer groupings decrease in size overall
-ANCHORS = [[76,181, 109,162, 131,261], [42,98, 53,120, 58,137]]
+ANCHORS = [42,98, 53,120, 58,137, 76,181, 109,162, 131,261]
 
 class BoundBox:
     """Class to keep track of bounding box object"""
@@ -221,9 +218,11 @@ if __name__ == '__main__':
     print('len of outputs = ', len(outputs))    # summarize the shape of the list of arrays
     print([a.shape for a in outputs])
     boxes = list()
+    anchors = np.array(ANCHORS).reshape(2,-1)
+    anchors = [anchors[1], anchors[0]]
     for i in range(len(outputs)):
         # decode the output of the network
-        boxes += decode_netout(outputs[i][0], ANCHORS[i], args.thresh, input_h, input_w)
+        boxes += decode_netout(outputs[i][0], anchors[i], args.thresh, input_h, input_w)
     # correct the sizes of the bounding boxes for the shape of the image
     correct_yolo_boxes(boxes, image_h, image_w, input_h, input_w)
     # suppress non-maximal boxes
