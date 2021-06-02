@@ -35,9 +35,23 @@ jupyter notebook
     - Update the hyperparameter sweep values for your scenario to experiment.
     - Update the `epochs` for training to experiment.
 
+7.  Download the Darknet `.weights` and config, `.cfg` file from Azure ML Workspace run `outputs` folder.
+8.  Convert to ONNX
+  - Use [this script](https://github.com/jkjung-avt/tensorrt_demos/blob/master/yolo/yolo_to_onnx.py) to convert Darknet weights to ONNX (note, this script is in a different repo). e.g.:
+
+```
+python yolo_to_onnx.py --model yolov4-tiny-custom_final
+```
+
+  - Use the `helper_scripts/demo_onnx.py` to predict with your model on a single image.
+        - e.g.:
+```
+python helper_scripts/onnx_export_demo/demo_onnx.py --model yolov4-tiny-custom_final.onnx --image mytestimage.jpg --labels obj.names --thresh 0.7`
+```
+
 ## Todo
 
 - [ ] Automatcially calcuate anchor boxes
 - [ ] Support full sized YOLOv4
 - [ ] Add hyperparameters and class number as params in `train.ipynb` Jupyter notebook
-- [ ] Show converting to ONNX (for now please reference [this script](https://github.com/linghu8812/tensorrt_inference/blob/master/Yolov4/export_onnx.py))
+- [x] Show converting to ONNX

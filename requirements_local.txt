@@ -1,4 +1,4 @@
 azureml-core==1.29.0
 jupyter==1.0.0
-onnx==1.9.0
+onnx==1.4.1
 onnxruntime==1.7.0

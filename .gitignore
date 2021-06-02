@@ -6,7 +6,7 @@ images/
 *.json
 anchors.txt
 results/
-demo_*
+.DS_Store
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
